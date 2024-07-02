@@ -7,7 +7,7 @@
 #include "InteractionInterface.h"
 #include "RobotCharacter.generated.h"
 
-DECLARE_DELEGATE_OneParam(FHackingUpdate, AActor*)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHackingUpdate);
 
 UENUM(BlueprintType)
 enum class ERobotState : uint8
@@ -32,14 +32,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class ACharacter* OwnerCharacter;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* InteractionWidgetComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UWidgetComponent* ButtonWidgetComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	ERobotState RobotState;
 
+	UPROPERTY(BlueprintAssignable)
 	FHackingUpdate HackingUpdate;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite , Category = "HackingData")
+	float HackingPercent = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HackingData")
+	float CurrentHackingPercent = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HackingData")
+	float MaxHackingPercent = 100.f;
+
+	FTimerHandle HackingAbortTimer;
 
 protected:
 	// Called when the game starts or when spawned
@@ -51,10 +63,16 @@ public:
 
 public:
 	void HackingStart(AActor* Caller);
+	void HackingAbort();
+
+	UFUNCTION()
 	void HackingEnd(AActor* Caller);
 
 	void MoveAction(FVector GoalLocation);
-	void PlayerSelect(int32 Value);
+	void RoubotSuiecide();
+	void PlayerSelectState(int32 Value);
+
+
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	void OnInteract(AActor* Caller);
