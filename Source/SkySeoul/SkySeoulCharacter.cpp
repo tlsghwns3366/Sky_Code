@@ -55,6 +55,8 @@ ASkySeoulCharacter::ASkySeoulCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	FocusedActor = nullptr;
 }
 
 void ASkySeoulCharacter::BeginPlay()
@@ -118,7 +120,7 @@ void ASkySeoulCharacter::LocationTrace()
 	FVector End = Start + (Rot.Vector() * 3000.f);
 	FCollisionQueryParams TraceParams;
 	bool Result = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_WorldStatic, TraceParams);
-	DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 2.0f);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 2.0f);
 	if (Result)
 	{
 		RobotLocation = HitResult.Location;
@@ -127,7 +129,6 @@ void ASkySeoulCharacter::LocationTrace()
 	{
 		RobotLocation = End;
 	}
-
 }
 
 void ASkySeoulCharacter::Interaction()
@@ -163,8 +164,8 @@ bool ASkySeoulCharacter::AddRobot(ARobotCharacter* RobotCharacter)
 {
 	if (RobotArray.Num() >= MaxRobotCount)
 		return false;
-
 	RobotArray.AddUnique(RobotCharacter);
+	ChangeRobot(RobotArray.Num()-1);
 	return true;
 }
 
@@ -172,110 +173,62 @@ void ASkySeoulCharacter::SelectRobotAction()
 {
 	if (RobotArray.Num() > SelectRobotNumber)
 	{
-
-		GetWorld()->GetTimerManager().ClearTimer(RobotLocationTimer);
-		RobotLocation.Z = 0.f;
-		RobotArray[SelectRobotNumber]->MoveAction(RobotLocation);
-
-		/*
 		switch (SelectNumber)
 		{
 		case 1:
-			GetWorld()->GetTimerManager().SetTimer(RobotLocationTimer, this, &ASkySeoulCharacter::LocationTrace, 0.01f, true);
+			RobotArray[SelectRobotNumber]->PlayerSelectState(1);
 			break;
 		case 2:
-			GetWorld()->GetTimerManager().ClearTimer(RobotLocationTimer);
+			RobotLocation.Z = 0.f;
 			RobotArray[SelectRobotNumber]->MoveAction(RobotLocation);
+			break;
+		case 3:
+			RobotArray[SelectRobotNumber]->PlayerSelectState(3);
+			RobotArray[SelectRobotNumber]->SetSelect(false);
+			RobotArray.RemoveAt(SelectRobotNumber);
+			ChangeRobot();
+			break;
+		case 4:
+			RobotArray[SelectRobotNumber]->RobotExplosion();
+			RobotArray[SelectRobotNumber]->SetSelect(false);
+			RobotArray.RemoveAt(SelectRobotNumber);
+			ChangeRobot();
 			break;
 		default:
 			break;
-		}*/
+		}
 	}
+}
+
+void ASkySeoulCharacter::ChangeRobot()
+{
+	if(RobotArray.Num() > SelectRobotNumber)
+		RobotArray[SelectRobotNumber]->SetSelect(false);
+
+	SelectRobotNumber++;
+	if (SelectRobotNumber >= RobotArray.Num())
+		SelectRobotNumber = 0;
+
+	if (RobotArray.Num() > SelectRobotNumber)
+		RobotArray[SelectRobotNumber]->SetSelect(true);
+
+}
+
+void ASkySeoulCharacter::ChangeRobot(int32 Value)
+{
+	if (RobotArray.Num() > SelectRobotNumber)
+		RobotArray[SelectRobotNumber]->SetSelect(false);
+
+	SelectRobotNumber = Value;
+	if (SelectRobotNumber >= RobotArray.Num())
+		SelectRobotNumber = 0;
+
+	if (RobotArray.Num() > SelectRobotNumber)
+		RobotArray[Value]->SetSelect(true);
 }
 
 void ASkySeoulCharacter::RequestSelectAction(const FInputActionValue& Value)
 {
 	int32 Num = Value.Get<float>();
 	SelectNumber = Num;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Input
-
-void ASkySeoulCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-	
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::Move);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::Look);
-
-		//Interaction
-		EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::Interaction);
-
-		//Select
-		//EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::SelectRobotAction);
-		EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::LocationTrace);
-		EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Completed, this, &ASkySeoulCharacter::SelectRobotAction);
-		
-		// ** SelectNumberAction ** //
-		EnhancedInputComponent->BindAction(SelectNumberAction, ETriggerEvent::Triggered, this, &ASkySeoulCharacter::RequestSelectAction);
-
-	}
-	else
-	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	}
-}
-
-void ASkySeoulCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
-	}
-}
-
-void ASkySeoulCharacter::Look(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
 }

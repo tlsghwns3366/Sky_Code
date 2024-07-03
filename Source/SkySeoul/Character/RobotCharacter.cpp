@@ -5,6 +5,8 @@
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "BrainComponent.h"
+#include "Components/CapsuleComponent.h"
 
 #include "SkySeoulCharacter.h"
 #include "AI/RobotAIController.h"
@@ -72,7 +74,12 @@ void ARobotCharacter::HackingEnd(AActor* Caller)
 {
 	RobotState = ERobotState::E_FollowCharacter;
 	InteractionWidgetComponent->SetVisibility(false);
-	Cast<ASkySeoulCharacter>(Caller)->AddRobot(this);
+	ASkySeoulCharacter* PlayerCharacter = Cast<ASkySeoulCharacter>(Caller);
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->AddRobot(this);
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(HackingAbortTimer);
 	ARobotAIController* RobotController = Cast< ARobotAIController>(GetController());
 	if (RobotController)
@@ -91,8 +98,20 @@ void ARobotCharacter::MoveAction(FVector GoalLocation)
 	}
 }
 
-void ARobotCharacter::RoubotSuiecide()
+void ARobotCharacter::RobotExplosion()
 {
+	GetMesh()->SetSimulatePhysics(true);
+	AAIController* RobotController = Cast<AAIController>(GetController());
+	if (RobotController)
+	{
+		RobotController->GetBrainComponent()->StopLogic(FString("Die"));
+		RobotController->Destroy();
+	}
+	UCapsuleComponent* RobotCapsule = GetCapsuleComponent();
+	if (RobotCapsule)
+	{
+		RobotCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 void ARobotCharacter::PlayerSelectState(int32 Value)
@@ -108,10 +127,20 @@ void ARobotCharacter::PlayerSelectState(int32 Value)
 		break;
 	case 3:
 		RobotState = ERobotState::E_Idle;
+		GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);
 		break;
+	case 4:
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+		RobotExplosion();
 	default:
 		break;
 	}
+}
+
+void ARobotCharacter::SetSelect(bool Value)
+{
+	IsSelect = Value;
+	PlayerSelectUpdate.Broadcast();
 }
 
 void ARobotCharacter::OnInteract_Implementation(AActor* Caller)
@@ -130,7 +159,8 @@ void ARobotCharacter::EndFocus_Implementation()
 {
 	if (RobotState == ERobotState::E_Idle)
 	{
-		GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);
+		if (HackingPercent > 0.f)
+			GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);
 		InteractionWidgetComponent->SetVisibility(false);
 	}
 }

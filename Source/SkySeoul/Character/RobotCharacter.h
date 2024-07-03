@@ -8,6 +8,7 @@
 #include "RobotCharacter.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHackingUpdate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPlayerSelectUpdate);
 
 UENUM(BlueprintType)
 enum class ERobotState : uint8
@@ -43,6 +44,8 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FHackingUpdate HackingUpdate;
+	UPROPERTY(BlueprintAssignable)
+	FPlayerSelectUpdate PlayerSelectUpdate;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite , Category = "HackingData")
 	float HackingPercent = 0.f;
@@ -50,6 +53,9 @@ public:
 	float CurrentHackingPercent = 0.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HackingData")
 	float MaxHackingPercent = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HackingData")
+	bool IsSelect = false;
+
 
 	FTimerHandle HackingAbortTimer;
 
@@ -64,14 +70,13 @@ public:
 public:
 	void HackingStart(AActor* Caller);
 	void HackingAbort();
-
-	UFUNCTION()
 	void HackingEnd(AActor* Caller);
 
 	void MoveAction(FVector GoalLocation);
-	void RoubotSuiecide();
+	void RobotExplosion();
 	void PlayerSelectState(int32 Value);
 
+	void SetSelect(bool Value);
 
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
