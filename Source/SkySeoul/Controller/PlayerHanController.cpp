@@ -8,6 +8,9 @@
 #include "Engine/LocalPlayer.h"
 
 #include "SkySeoulCharacter.h"
+#include "ProjectPlayerState.h"
+#include "Character/Abilities/CharacterAbilitySystemComponent.h"
+#include	"ProjectPlayerState.h"
 
 void APlayerHanController::BeginPlay()
 {
@@ -17,6 +20,29 @@ void APlayerHanController::BeginPlay()
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
+	DefaultInitialization();
+}
+
+void APlayerHanController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	AProjectPlayerState* PS = GetPlayerState<AProjectPlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, InPawn);
+	}
+}
+
+void APlayerHanController::PostProcessInput(const float DeltaTime, const bool bGamePaused)
+{
+	//프레임에 한번 실행된다.
+	UCharacterAbilitySystemComponent* ASC = Cast<UCharacterAbilitySystemComponent>(GetCharacterAbilitySystemComponent());
+	if (ASC)
+	{
+		ASC->ProcessAbilityInput(DeltaTime, bGamePaused);
+	}
+
+	Super::PostProcessInput(DeltaTime, bGamePaused);
 }
 
 void APlayerHanController::SetupInputComponent()
@@ -38,93 +64,158 @@ void APlayerHanController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &APlayerHanController::Interaction);
 
 		//Select
-		EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Completed, this, &APlayerHanController::Select);
-		EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &APlayerHanController::LocationTrace);
+		//EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Completed, this, &APlayerHanController::Select);
+		//EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &APlayerHanController::LocationTrace);
 
 		// ** SelectNumberAction ** //
 		EnhancedInputComponent->BindAction(SelectNumberAction, ETriggerEvent::Triggered, this, &APlayerHanController::SelectNumber);
 
 		// ** TabAction ** //
 		EnhancedInputComponent->BindAction(TabAction, ETriggerEvent::Triggered, this, &APlayerHanController::ChangeRobotNumber);
-
 	}
 }
 
 void APlayerHanController::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	if (!PlayerCharacter)
+		return;
+	if (PlayerCharacter->IsAlive())
+	{
+		// input is a Vector2D
+		FVector2D MovementVector = Value.Get<FVector2D>();
 
-	// find out which way is forward
-	const FRotator Rotation = GetControlRotation();
-	const FRotator YawRotation(0, Rotation.Yaw, 0);
+		// find out which way is forward
+		const FRotator Rotation = GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-	// get forward vector
-	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		// get forward vector
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-	// get right vector 
-	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		// get right vector 
+		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	// add movement 
-	PlayerCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
-	PlayerCharacter->AddMovementInput(RightDirection, MovementVector.X);
+		// add movement 
+		PlayerCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
+		PlayerCharacter->AddMovementInput(RightDirection, MovementVector.X);
+	}
 }
 
 void APlayerHanController::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-	// add yaw and pitch input to controller
-	PlayerCharacter->AddControllerYawInput(LookAxisVector.X);
-	PlayerCharacter->AddControllerPitchInput(LookAxisVector.Y);
+	if (PlayerCharacter->IsAlive())
+	{
+		// input is a Vector2D
+		FVector2D LookAxisVector = Value.Get<FVector2D>();
+		// add yaw and pitch input to controller
+		PlayerCharacter->AddControllerYawInput(LookAxisVector.X);
+		PlayerCharacter->AddControllerPitchInput(LookAxisVector.Y);
+	}
 }
 
 void APlayerHanController::ControllerJump()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->Jump();
+	if (PlayerCharacter->IsAlive())
+	{
+		PlayerCharacter->Jump();
+	}
 }
 
 void APlayerHanController::ControllerStopJump()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->StopJumping();
+	if (PlayerCharacter->IsAlive())
+	{
+		PlayerCharacter->StopJumping();
+	}
 }
 
 void APlayerHanController::Select()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->SelectRobotAction();
+	if (PlayerCharacter->IsAlive())
+	{
+		PlayerCharacter->SelectRobotAction();
+	}
 }
 
 void APlayerHanController::Interaction()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->Interaction();
+	if (PlayerCharacter->IsAlive())
+	{
+		PlayerCharacter->Interaction();
+	}
 }
 
 void APlayerHanController::SelectNumber(const FInputActionValue& Value)
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->RequestSelectAction(Value);
+	if (PlayerCharacter->IsAlive())
+	{
+		int32 Num = Value.Get<float>();
+		PlayerCharacter->RequestSelectAction(Num);
+	}
 }
 
 void APlayerHanController::LocationTrace()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->LocationTrace();
+
+	if (PlayerCharacter->IsAlive()) 
+	{
+		PlayerCharacter->LocationTrace();
+	}
 }
 
 void APlayerHanController::ChangeRobotNumber()
 {
 	if (!PlayerCharacter)
 		return;
-	PlayerCharacter->ChangeRobot();
+	if (PlayerCharacter->IsAlive())
+	{
+		PlayerCharacter->ChangeRobot();
+	}
+}
 
+void APlayerHanController::DefaultInitialization()
+{
+	if (!PlayerCharacter)
+		return;
+	if (const USkySeoulInputConfig* InputConfig = PlayerCharacter->InputConfig)
+	{
+		TArray<uint32> BindHandles;
+		BindAbilityActions(InputConfig,this, &ThisClass::Input_AbilityInputTagPressed, &ThisClass::Input_AbilityInputTagReleased, /*out*/ BindHandles);
+	}
+}
+
+void APlayerHanController::Input_AbilityInputTagPressed(FGameplayTag InputTag)
+{
+	if (UCharacterAbilitySystemComponent* ASC = Cast<UCharacterAbilitySystemComponent>(GetCharacterAbilitySystemComponent()))
+	{
+		ASC->AbilityInputTagPressed(InputTag);
+	}
+}
+
+void APlayerHanController::Input_AbilityInputTagReleased(FGameplayTag InputTag)
+{
+	if (UCharacterAbilitySystemComponent* ASC = Cast<UCharacterAbilitySystemComponent>(GetCharacterAbilitySystemComponent()))
+	{
+		ASC->AbilityInputTagReleased(InputTag);
+	}
+}
+
+UAbilitySystemComponent* APlayerHanController::GetCharacterAbilitySystemComponent() const
+{
+	const AProjectPlayerState* PPS = CastChecked<AProjectPlayerState>(PlayerState, ECastCheckedType::NullAllowed);
+	if (PPS)
+		return PPS->GetAbilitySystemComponent();
+	else
+		return nullptr;
 }

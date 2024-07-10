@@ -26,7 +26,7 @@ class SKYSEOUL_API ARobotCharacter : public ACharacterBase, public IInteractionI
 
 public:
 	// Sets default values for this character's properties
-	ARobotCharacter();
+	ARobotCharacter(const class FObjectInitializer& ObjectInitializer);
 
 public:
 

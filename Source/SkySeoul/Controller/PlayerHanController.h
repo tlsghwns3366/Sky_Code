@@ -7,6 +7,8 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "SkySeoulInputConfig.h"
+#include "EnhancedInputComponent.h"
 #include "PlayerHanController.generated.h"
 
 /**
@@ -53,6 +55,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* InPawn) override;
+
+	virtual void PostProcessInput(const float DeltaTime, const bool bGamePaused) override;
 	void SetupInputComponent() override;
 
 	/** Called for movement input */
@@ -72,5 +77,39 @@ protected:
 	void LocationTrace();
 	void ChangeRobotNumber();
 
+	void DefaultInitialization();
+
+	void Input_AbilityInputTagPressed(FGameplayTag InputTag);
+	void Input_AbilityInputTagReleased(FGameplayTag InputTag);
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "PlayerController")
+	UAbilitySystemComponent* GetCharacterAbilitySystemComponent() const;
+
+	template<class UserClass, typename PressedFuncType, typename ReleasedFuncType>
+	void BindAbilityActions(const USkySeoulInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>& BindHandles);
 
 };
+
+template<class UserClass, typename PressedFuncType, typename ReleasedFuncType>
+inline void APlayerHanController::BindAbilityActions(const USkySeoulInputConfig* InputConfig, UserClass* Object, PressedFuncType PressedFunc, ReleasedFuncType ReleasedFunc, TArray<uint32>& BindHandles)
+{
+	check(InputConfig);
+	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
+	for (const FSkySeoulInputAction& Action : InputConfig->AbilityInputActions)
+	{
+		if (Action.InputAction && Action.InputTag.IsValid())
+		{
+			if (PressedFunc)
+			{
+				BindHandles.Add(EnhancedInputComponent->BindAction(Action.InputAction, ETriggerEvent::Triggered, Object, PressedFunc, Action.InputTag).GetHandle());
+			}
+
+			if (ReleasedFunc)
+			{
+				BindHandles.Add(EnhancedInputComponent->BindAction(Action.InputAction, ETriggerEvent::Completed, Object, ReleasedFunc, Action.InputTag).GetHandle());
+			}
+		}
+	}
+}

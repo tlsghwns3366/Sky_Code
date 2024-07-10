@@ -13,13 +13,17 @@
 
 #include "InteractionInterface.h"
 #include "Character/RobotCharacter.h"
+#include "Character/Abilities/CharacterAbilitySystemComponent.h"
+#include "ProjectPlayerState.h"
+#include "Controller/PlayerHanController.h"
+#include "Character/Abilities/CharacterGameplayAbility.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
 // ASkySeoulCharacter
 
-ASkySeoulCharacter::ASkySeoulCharacter()
+ASkySeoulCharacter::ASkySeoulCharacter(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -57,12 +61,17 @@ ASkySeoulCharacter::ASkySeoulCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
 	FocusedActor = nullptr;
+	DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
+
+	AIControllerClass = APlayerController::StaticClass();
 }
 
 void ASkySeoulCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+	StartingCameraBoomArmLength = CameraBoom->TargetArmLength;
+	StartingCameraBoomLocation = CameraBoom->GetRelativeLocation();
 }
 
 void ASkySeoulCharacter::Tick(float DeltaTime)
@@ -70,6 +79,56 @@ void ASkySeoulCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	ForwardTrace();
 }
+
+void ASkySeoulCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	BindASCInput();
+}
+
+void ASkySeoulCharacter::InitializeStartingValues(AProjectPlayerState* PS)
+{
+	AbilitySystemComponent = Cast<UCharacterAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+	AttributeSetBase = PS->GatAttributeSetBase();
+	AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
+	InitializeAttributes();
+	SetHealth(GetMaxHealth());
+}
+
+void ASkySeoulCharacter::BindASCInput()
+{
+	//사용안되는걸로 판단됨
+	if (!ASCInputBound && AbilitySystemComponent.IsValid() && IsValid(InputComponent))
+	{
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"), FString("CancelTarget"), FString("SkySeoulAbilityID"), static_cast<int32>(SkySeoulAbilityID::Confirm), static_cast<int32>(SkySeoulAbilityID::Cancel)));
+		ASCInputBound = true;
+	}
+}
+
+void ASkySeoulCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	AProjectPlayerState* PS = GetPlayerState<AProjectPlayerState>();
+	if (PS)
+	{
+		InitializeStartingValues(PS);
+
+		AddStartupEffects();
+		AddCharacterAbilities();
+	}
+}
+
+void ASkySeoulCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	AProjectPlayerState* PS = GetPlayerState<AProjectPlayerState>();
+	if (PS)
+	{
+		InitializeStartingValues(PS);
+	}
+}
+
 
 void ASkySeoulCharacter::ForwardTrace()
 {
@@ -169,6 +228,16 @@ bool ASkySeoulCharacter::AddRobot(ARobotCharacter* RobotCharacter)
 	return true;
 }
 
+float ASkySeoulCharacter::GetStartingCameraBoomArmLength()
+{
+	return StartingCameraBoomArmLength;
+}
+
+FVector ASkySeoulCharacter::GetStartingCameraBoomLocation()
+{
+	return StartingCameraBoomLocation;
+}
+
 void ASkySeoulCharacter::SelectRobotAction()
 {
 	if (RobotArray.Num() > SelectRobotNumber)
@@ -211,10 +280,10 @@ void ASkySeoulCharacter::ChangeRobot()
 
 	if (RobotArray.Num() > SelectRobotNumber)
 		RobotArray[SelectRobotNumber]->SetSelect(true);
-
+	OnRobotUpdated.Broadcast();
 }
 
-void ASkySeoulCharacter::ChangeRobot(int32 Value)
+void ASkySeoulCharacter::ChangeRobot(const int32 Value)
 {
 	if (RobotArray.Num() > SelectRobotNumber)
 		RobotArray[SelectRobotNumber]->SetSelect(false);
@@ -225,10 +294,10 @@ void ASkySeoulCharacter::ChangeRobot(int32 Value)
 
 	if (RobotArray.Num() > SelectRobotNumber)
 		RobotArray[Value]->SetSelect(true);
+	OnRobotUpdated.Broadcast();
 }
 
-void ASkySeoulCharacter::RequestSelectAction(const FInputActionValue& Value)
+void ASkySeoulCharacter::RequestSelectAction(const int32 Num)
 {
-	int32 Num = Value.Get<float>();
 	SelectNumber = Num;
 }

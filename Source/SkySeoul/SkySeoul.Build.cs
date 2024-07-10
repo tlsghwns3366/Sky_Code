@@ -23,5 +23,13 @@ public class SkySeoul : ModuleRules
             "EnhancedInput",
             "AIModule",
             "UMG", });
-	}
+
+        PrivateDependencyModuleNames.AddRange(new string[]
+        {
+            "GameplayAbilities",
+            "GameplayTags",
+            "GameplayTasks"
+        });
+
+    }
 }
