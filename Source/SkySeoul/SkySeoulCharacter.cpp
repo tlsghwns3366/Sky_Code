@@ -86,16 +86,6 @@ void ASkySeoulCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	BindASCInput();
 }
 
-void ASkySeoulCharacter::InitializeStartingValues(AProjectPlayerState* PS)
-{
-	AbilitySystemComponent = Cast<UCharacterAbilitySystemComponent>(PS->GetAbilitySystemComponent());
-	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-	AttributeSetBase = PS->GatAttributeSetBase();
-	AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
-	InitializeAttributes();
-	SetHealth(GetMaxHealth());
-}
-
 void ASkySeoulCharacter::BindASCInput()
 {
 	//사용안되는걸로 판단됨
@@ -103,19 +93,6 @@ void ASkySeoulCharacter::BindASCInput()
 	{
 		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"), FString("CancelTarget"), FString("SkySeoulAbilityID"), static_cast<int32>(SkySeoulAbilityID::Confirm), static_cast<int32>(SkySeoulAbilityID::Cancel)));
 		ASCInputBound = true;
-	}
-}
-
-void ASkySeoulCharacter::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-	AProjectPlayerState* PS = GetPlayerState<AProjectPlayerState>();
-	if (PS)
-	{
-		InitializeStartingValues(PS);
-
-		AddStartupEffects();
-		AddCharacterAbilities();
 	}
 }
 

@@ -10,6 +10,9 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, ACharacterBase*, CharacterBase);
 
+
+class AProjectPlayerState;
+
 UCLASS()
 class SKYSEOUL_API ACharacterBase : public ACharacter, public IAbilitySystemInterface
 {
@@ -36,9 +39,6 @@ public:
 	virtual int32 GetAbilityLevel(enum SkySeoulAbilityID AbilityID) const;
 
 	virtual void RemoveCharacterAbilities();
-	virtual void Die();
-	UFUNCTION(BlueprintCallable, Category = "Character")
-	virtual void FinishDying();
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	float GetCharacterLevel() const;
 	UFUNCTION(BlueprintCallable, Category = "Character")
@@ -49,6 +49,8 @@ public:
 	float GetSp() const;
 	UFUNCTION(BlueprintCallable, Category = "Character")
 	float GetMaxSp() const;
+
+	virtual void PossessedBy(AController* NewController) override;
 
 	// Input configuration used by player controlled pawns to create input mappings and bind input actions.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Input")
@@ -69,6 +71,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Abilities")
 	TArray<TSubclassOf<class UGameplayEffect>> StartupEffects;
 
+	virtual void InitializeStartingValues(AProjectPlayerState* PS);
 
 	virtual void AddCharacterAbilities();
 	virtual void InitializeAttributes();

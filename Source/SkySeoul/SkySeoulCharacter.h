@@ -77,12 +77,10 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	void InitializeStartingValues(class AProjectPlayerState* PS);
 	void BindASCInput();
 
 public:
 
-	virtual void PossessedBy(AController* NewController) override;
 
 	void ForwardTrace();
 

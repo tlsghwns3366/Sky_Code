@@ -8,6 +8,10 @@
 #include "Character/Abilities/CharacterGameplayAbility.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+
+#include "ProjectPlayerState.h"
+
+
 // Sets default values
 ACharacterBase::ACharacterBase(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
@@ -73,32 +77,6 @@ void ACharacterBase::RemoveCharacterAbilities()
 	AbilitySystemComponent->CharacterAbilitiesGiven = false;
 }
 
-void ACharacterBase::Die()
-{
-	RemoveCharacterAbilities();
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCharacterMovement()->GravityScale = 0;
-	GetCharacterMovement()->Velocity = FVector(0);
-
-	OnCharacterDied.Broadcast(this);
-
-	if (AbilitySystemComponent.IsValid())
-	{
-		AbilitySystemComponent->CancelAbilities();
-		FGameplayTagContainer EFFectsTagsToRemove;
-		EFFectsTagsToRemove.AddTag(EffectRemoveOnDeathTag);
-
-		int32 NumEffectsEremoved = AbilitySystemComponent->RemoveActiveEffectsWithTags(EFFectsTagsToRemove);
-		AbilitySystemComponent->AddLooseGameplayTag(DeadTag);
-	}
-	FinishDying();
-}
-
-void ACharacterBase::FinishDying()
-{
-	Destroy();
-}
-
 float ACharacterBase::GetCharacterLevel() const
 {
 	if (AttributeSetBase.IsValid())
@@ -132,6 +110,29 @@ float ACharacterBase::GetMaxSp() const
 	if (AttributeSetBase.IsValid())
 		return AttributeSetBase->GetMaxSp();
 	return 0.0f;
+}
+
+void ACharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	AProjectPlayerState* PS = GetPlayerState<AProjectPlayerState>();
+	if (PS)
+	{
+		InitializeStartingValues(PS);
+
+		AddStartupEffects();
+		AddCharacterAbilities();
+	}
+}
+
+void ACharacterBase::InitializeStartingValues(AProjectPlayerState* PS)
+{
+	AbilitySystemComponent = Cast<UCharacterAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+	AttributeSetBase = PS->GatAttributeSetBase();
+	AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
+	InitializeAttributes();
+	SetHealth(GetMaxHealth());
 }
 
 void ACharacterBase::AddCharacterAbilities()
