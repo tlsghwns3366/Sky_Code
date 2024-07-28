@@ -22,7 +22,10 @@ public class SkySeoul : ModuleRules
             "InputCore",
             "EnhancedInput",
             "AIModule",
-            "UMG", });
+            "UMG",
+             "Slate",
+            "SlateCore",
+        });
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {

@@ -10,7 +10,7 @@
 
 
 #include "ProjectPlayerState.h"
-
+#include "Abilities/AbilitySetData.h"
 
 // Sets default values
 ACharacterBase::ACharacterBase(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -50,31 +50,6 @@ void ACharacterBase::Attack()
 bool ACharacterBase::IsAlive() const
 {
 	return GetHealth() > 0.f;
-}
-
-int32 ACharacterBase::GetAbilityLevel(enum SkySeoulAbilityID AbilityID) const
-{
-	return 1;
-}
-
-void ACharacterBase::RemoveCharacterAbilities()
-{
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->CharacterAbilitiesGiven)
-		return;
-
-	TArray<FGameplayAbilitySpecHandle> AbilitiesToRemove;
-	for (const FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
-	{
-		if ((Spec.SourceObject == this) && CharacterAbilities.Contains(Spec.Ability->GetClass()))
-		{
-			AbilitiesToRemove.Add(Spec.Handle);
-		}
-	}
-	for (int32 i = 0; i < AbilitiesToRemove.Num(); i++)
-	{
-		AbilitySystemComponent->ClearAbility(AbilitiesToRemove[i]);
-	}
-	AbilitySystemComponent->CharacterAbilitiesGiven = false;
 }
 
 float ACharacterBase::GetCharacterLevel() const
@@ -119,9 +94,15 @@ void ACharacterBase::PossessedBy(AController* NewController)
 	if (PS)
 	{
 		InitializeStartingValues(PS);
+		for (const UAbilitySetData* AbilitySet : AbilitySets)
+		{
+			if (AbilitySet)
+			{
+				AbilitySet->GiveToAbilitySystem(AbilitySystemComponent, nullptr);
+			}
+		}
+		SetHealth(GetMaxHealth());
 
-		AddStartupEffects();
-		AddCharacterAbilities();
 	}
 }
 
@@ -131,54 +112,6 @@ void ACharacterBase::InitializeStartingValues(AProjectPlayerState* PS)
 	AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 	AttributeSetBase = PS->GatAttributeSetBase();
 	AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
-	InitializeAttributes();
-	SetHealth(GetMaxHealth());
-}
-
-void ACharacterBase::AddCharacterAbilities()
-{
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->CharacterAbilitiesGiven)
-		return;
-	for (TSubclassOf<UCharacterGameplayAbility>& StartUpAbility : CharacterAbilities)
-	{
-		FGameplayAbilitySpec Spec(StartUpAbility, 0);
-		Spec.DynamicAbilityTags.AddTag(StartUpAbility->GetDefaultObject<UCharacterGameplayAbility>()->InputTag);
-		AbilitySystemComponent->GiveAbility(Spec);
-	}
-	AbilitySystemComponent->CharacterAbilitiesGiven = true;
-}
-
-void ACharacterBase::InitializeAttributes()
-{
-	if (!AbilitySystemComponent.IsValid())
-		return;
-	if (!DefaultAttributes)
-		return;
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-	EffectContext.AddSourceObject(this);
-	FGameplayEffectSpecHandle NewHendle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributes, GetCharacterLevel(),EffectContext);
-	if (NewHendle.IsValid())
-	{
-		FActiveGameplayEffectHandle ActiveGEHendle = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*NewHendle.Data.Get(),AbilitySystemComponent.Get());
-	}
-}
-
-void ACharacterBase::AddStartupEffects()
-{
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->StartupEffectsApplied)
-		return;
-	FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-	EffectContext.AddSourceObject(this);
-	for (TSubclassOf<UGameplayEffect> GameplayEffect : StartupEffects)
-	{
-		FGameplayEffectSpecHandle NewHendle = AbilitySystemComponent->MakeOutgoingSpec(GameplayEffect, GetCharacterLevel(),EffectContext);
-		if (NewHendle.IsValid())
-		{
-			FActiveGameplayEffectHandle ActiveGEHendle = AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*NewHendle.Data.Get(), AbilitySystemComponent.Get());
-		}
-	}
-	AbilitySystemComponent->StartupEffectsApplied = true;
-
 }
 
 void ACharacterBase::SetHealth(float Health)

@@ -13,9 +13,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPlayerSelectUpdate);
 UENUM(BlueprintType)
 enum class ERobotState : uint8
 {
+	E_Peace UMETA(DisplayName = "Peace"),
+	E_PreemptiveAttack UMETA(DisplayName = "PreemptiveAttack"),
+	E_UnderAttack UMETA(DisplayName = "UnderAttack"),
+};
+
+UENUM(BlueprintType)
+enum class ERobotActionState : uint8
+{
 	E_Idle UMETA(DisplayName = "Idle"),
 	E_FollowCharacter UMETA(DisplayName = "FollowCharacter"),
 	E_MoveLocation UMETA(DisplayName = "MoveLocation"),
+	E_Explosion UMETA(DisplayName = "Explosion"),
 };
 
 
@@ -41,6 +50,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	ERobotState RobotState;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ERobotActionState ActionState;
 
 	UPROPERTY(BlueprintAssignable)
 	FHackingUpdate HackingUpdate;
@@ -55,7 +66,12 @@ public:
 	float MaxHackingPercent = 100.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HackingData")
 	bool IsSelect = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RobotData")
+	int32 RobotCost = 1;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Action")
+	UAbilitySetData* RobotAbilityData;
 
 	FTimerHandle HackingAbortTimer;
 
@@ -72,11 +88,19 @@ public:
 	void HackingAbort();
 	void HackingEnd(AActor* Caller);
 
+	UFUNCTION(BlueprintCallable)
 	void MoveAction(FVector GoalLocation);
-	void RobotExplosion();
-	void PlayerSelectState(int32 Value);
 
+	UFUNCTION(BlueprintCallable)
+	void SetRobotActionState(ERobotActionState Value);
+	UFUNCTION(BlueprintCallable)
+	void RobotExplosion();
+	UFUNCTION(BlueprintCallable)
+	void RobotIsFree();
+	UFUNCTION(BlueprintCallable)
 	void SetSelect(bool Value);
+	UFUNCTION(BlueprintCallable)
+	void StateChange(ERobotState State);
 
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")

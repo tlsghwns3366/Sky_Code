@@ -23,26 +23,12 @@ enum class ESkySeoulAbilityActivationPolicy : uint8
 	OnSpawn
 };
 
-
-UENUM(BlueprintType)
-enum class SkySeoulAbilityID : uint8
-{
-	None UMETA(DisplayName = "None"),
-	Confirm UMETA(DisplayName = "Confirm"),
-	Cancel UMETA(DisplayName = "Cancel")
-};
-
 UCLASS()
 class SKYSEOUL_API UCharacterGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 public:
 	UCharacterGameplayAbility();
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability")
-	SkySeoulAbilityID AbilityInputID = SkySeoulAbilityID::None;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability")
-	SkySeoulAbilityID AbilityID = SkySeoulAbilityID::None;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	FGameplayTag InputTag;

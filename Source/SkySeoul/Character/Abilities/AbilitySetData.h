@@ -36,6 +36,8 @@ public:
 	// Tag used to process input for the ability.
 	UPROPERTY(EditDefaultsOnly, Meta = (Categories = "InputTag"))
 	FGameplayTag InputTag;
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag EventTag;
 };
 
 USTRUCT(BlueprintType)
@@ -111,6 +113,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	int32 GetAbilityCount();
+	
+	UFUNCTION(BlueprintCallable)
+	FGameplayTag GetAbilityEventTag(int32 Value);
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	TArray<FText> SelectText;
 
 protected:
 
@@ -125,4 +133,5 @@ protected:
 	// Attribute sets to grant when this ability set is granted.
 	UPROPERTY(EditDefaultsOnly, Category = "Attribute Sets", meta = (TitleProperty = AttributeSet))
 	TArray<FAbilitySetData_AttributeSet> GrantedAttributes;
+
 };

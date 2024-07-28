@@ -72,7 +72,7 @@ void ARobotCharacter::HackingAbort()
 
 void ARobotCharacter::HackingEnd(AActor* Caller)
 {
-	RobotState = ERobotState::E_FollowCharacter;
+	ActionState = ERobotActionState::E_FollowCharacter;
 	InteractionWidgetComponent->SetVisibility(false);
 	ASkySeoulCharacter* PlayerCharacter = Cast<ASkySeoulCharacter>(Caller);
 	if (PlayerCharacter)
@@ -90,7 +90,6 @@ void ARobotCharacter::HackingEnd(AActor* Caller)
 
 void ARobotCharacter::MoveAction(FVector GoalLocation)
 {
-	RobotState = ERobotState::E_MoveLocation;
 	ARobotAIController* RobotController = Cast< ARobotAIController>(GetController());
 	if (RobotController)
 	{
@@ -98,9 +97,17 @@ void ARobotCharacter::MoveAction(FVector GoalLocation)
 	}
 }
 
+void ARobotCharacter::SetRobotActionState(ERobotActionState Value)
+{
+	ActionState = Value;
+}
+
 void ARobotCharacter::RobotExplosion()
 {
+	SetSelect(false);
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	GetMesh()->SetSimulatePhysics(true);
+	ActionState = ERobotActionState::E_Explosion;
 	AAIController* RobotController = Cast<AAIController>(GetController());
 	if (RobotController)
 	{
@@ -114,26 +121,15 @@ void ARobotCharacter::RobotExplosion()
 	}
 }
 
-void ARobotCharacter::PlayerSelectState(int32 Value)
+void ARobotCharacter::RobotIsFree()
 {
-	switch (Value)
+	SetSelect(false);
+	ActionState = ERobotActionState::E_Idle;
+	GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);
+	ARobotAIController* RobotController = Cast<ARobotAIController>(GetController());
+	if (RobotController)
 	{
-	case 1:
-		RobotState = ERobotState::E_FollowCharacter;
-		break;
-	case 2:
-		RobotState = ERobotState::E_MoveLocation;
-		MoveAction(GetActorLocation());
-		break;
-	case 3:
-		RobotState = ERobotState::E_Idle;
-		GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);
-		break;
-	case 4:
-		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
-		RobotExplosion();
-	default:
-		break;
+		RobotController->SetOwnerCharacter(nullptr);
 	}
 }
 
@@ -143,21 +139,33 @@ void ARobotCharacter::SetSelect(bool Value)
 	PlayerSelectUpdate.Broadcast();
 }
 
+void ARobotCharacter::StateChange(ERobotState State)
+{
+	RobotState = State;
+}
+
 void ARobotCharacter::OnInteract_Implementation(AActor* Caller)
 {
-	if (RobotState == ERobotState::E_Idle)
+	ASkySeoulCharacter* PlayerCharacter = Cast<ASkySeoulCharacter>(Caller);
+	if (PlayerCharacter)
+	{
+		if (PlayerCharacter->RobotCostCheck(RobotCost))
+			return;
+	}
+
+	if (ActionState == ERobotActionState::E_Idle)
 		HackingStart(Caller);
 }
 
 void ARobotCharacter::StartFocus_Implementation()
 {
-	if(RobotState == ERobotState::E_Idle)
+	if(ActionState == ERobotActionState::E_Idle)
 		InteractionWidgetComponent->SetVisibility(true);
 }
 
 void ARobotCharacter::EndFocus_Implementation()
 {
-	if (RobotState == ERobotState::E_Idle)
+	if (ActionState == ERobotActionState::E_Idle)
 	{
 		if (HackingPercent > 0.f)
 			GetWorld()->GetTimerManager().SetTimer(HackingAbortTimer, this, &ARobotCharacter::HackingAbort, 1.0f, true);

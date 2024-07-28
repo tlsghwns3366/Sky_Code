@@ -29,8 +29,9 @@ void FAbilitySetData_GrantedHandles::AddAttributeSet(UAttributeSet* Set)
 void FAbilitySetData_GrantedHandles::TakeFromAbilitySystem(UCharacterAbilitySystemComponent* CharacterASC)
 {
 	check(CharacterASC);
-	if (CharacterASC->IsOwnerActorAuthoritative())
-		return;
+	//if (CharacterASC->IsOwnerActorAuthoritative())
+	//	return;
+
 	for (const FGameplayAbilitySpecHandle& Handle : AbilitySpecHandles)
 	{
 		if (Handle.IsValid())
@@ -63,8 +64,9 @@ UAbilitySetData::UAbilitySetData(const FObjectInitializer& ObjectInitializer)
 void UAbilitySetData::GiveToAbilitySystem(UCharacterAbilitySystemComponent* CharacterASC, FAbilitySetData_GrantedHandles* OutGrantedHandles, UObject* SourceObject) const
 {
 	check(CharacterASC);
-	if (CharacterASC->IsOwnerActorAuthoritative())
-		return;
+	//if (CharacterASC->IsOwnerActorAuthoritative())
+	//		return;
+
 	// Grant the gameplay abilities.
 	for (int32 AbilityIndex = 0; AbilityIndex < GrantedGameplayAbilities.Num(); ++AbilityIndex)
 	{
@@ -96,7 +98,6 @@ void UAbilitySetData::GiveToAbilitySystem(UCharacterAbilitySystemComponent* Char
 
 		const UGameplayEffect* GameplayEffect = EffectToGrant.GameplayEffect->GetDefaultObject<UGameplayEffect>();
 		const FActiveGameplayEffectHandle GameplayEffectHandle = CharacterASC->ApplyGameplayEffectToSelf(GameplayEffect, EffectToGrant.EffectLevel, CharacterASC->MakeEffectContext());
-
 		if (OutGrantedHandles)
 		{
 			OutGrantedHandles->AddGameplayEffectHandle(GameplayEffectHandle);
@@ -124,4 +125,11 @@ void UAbilitySetData::GiveToAbilitySystem(UCharacterAbilitySystemComponent* Char
 int32 UAbilitySetData::GetAbilityCount()
 {
 	return GrantedGameplayAbilities.Num();
+}
+
+FGameplayTag UAbilitySetData::GetAbilityEventTag(int32 Value)
+{
+	if (Value >= GetAbilityCount())
+		return FGameplayTag::EmptyTag;
+	return GrantedGameplayAbilities[Value].EventTag;
 }

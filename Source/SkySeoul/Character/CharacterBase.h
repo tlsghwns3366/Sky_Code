@@ -10,7 +10,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, ACharacterBase*, CharacterBase);
 
-
+class UAbilitySetData;
 class AProjectPlayerState;
 
 UCLASS()
@@ -35,10 +35,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Character")
 	virtual bool IsAlive() const;
-	UFUNCTION(BlueprintCallable, Category = "Character")
-	virtual int32 GetAbilityLevel(enum SkySeoulAbilityID AbilityID) const;
 
-	virtual void RemoveCharacterAbilities();
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	float GetCharacterLevel() const;
 	UFUNCTION(BlueprintCallable, Category = "Character")
@@ -58,24 +55,17 @@ public:
 
 protected:
 
-	TWeakObjectPtr<class UCharacterAbilitySystemComponent> AbilitySystemComponent;
+	TObjectPtr<class UCharacterAbilitySystemComponent> AbilitySystemComponent;
 	TWeakObjectPtr<class UCharacterAttributeSetBase> AttributeSetBase;
+
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Abilities")
+	TArray<TObjectPtr<UAbilitySetData>> AbilitySets;
 
 	FGameplayTag DeadTag;
 	FGameplayTag EffectRemoveOnDeathTag;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Abilities")
-	TArray<TSubclassOf<class UCharacterGameplayAbility>> CharacterAbilities;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Abilities")
-	TSubclassOf<class UGameplayEffect> DefaultAttributes;
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability|Abilities")
-	TArray<TSubclassOf<class UGameplayEffect>> StartupEffects;
-
 	virtual void InitializeStartingValues(AProjectPlayerState* PS);
-
-	virtual void AddCharacterAbilities();
-	virtual void InitializeAttributes();
-	virtual void AddStartupEffects();
 
 	virtual void SetHealth(float Health);
 	virtual void SetSp(float Sp);

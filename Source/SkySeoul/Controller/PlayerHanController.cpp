@@ -7,7 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 
-#include "SkySeoulCharacter.h"
+#include "Character/SkySeoulCharacter.h"
 #include "ProjectPlayerState.h"
 #include "Character/Abilities/CharacterAbilitySystemComponent.h"
 #include	"ProjectPlayerState.h"
@@ -70,8 +70,6 @@ void APlayerHanController::SetupInputComponent()
 		// ** SelectNumberAction ** //
 		EnhancedInputComponent->BindAction(SelectNumberAction, ETriggerEvent::Triggered, this, &APlayerHanController::SelectNumber);
 
-		// ** TabAction ** //
-		EnhancedInputComponent->BindAction(TabAction, ETriggerEvent::Triggered, this, &APlayerHanController::ChangeRobotNumber);
 	}
 }
 
@@ -132,16 +130,6 @@ void APlayerHanController::ControllerStopJump()
 	}
 }
 
-void APlayerHanController::Select()
-{
-	if (!PlayerCharacter)
-		return;
-	if (PlayerCharacter->IsAlive())
-	{
-		PlayerCharacter->SelectRobotAction();
-	}
-}
-
 void APlayerHanController::Interaction()
 {
 	if (!PlayerCharacter)
@@ -173,17 +161,6 @@ void APlayerHanController::LocationTrace()
 		PlayerCharacter->LocationTrace();
 	}
 }
-
-void APlayerHanController::ChangeRobotNumber()
-{
-	if (!PlayerCharacter)
-		return;
-	if (PlayerCharacter->IsAlive())
-	{
-		PlayerCharacter->ChangeRobot();
-	}
-}
-
 void APlayerHanController::DefaultInitialization()
 {
 	if (!PlayerCharacter)

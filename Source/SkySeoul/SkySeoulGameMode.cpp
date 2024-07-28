@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SkySeoulGameMode.h"
-#include "SkySeoulCharacter.h"
+#include "Character/SkySeoulCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 ASkySeoulGameMode::ASkySeoulGameMode()

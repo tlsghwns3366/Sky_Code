@@ -23,6 +23,8 @@ protected:
 	class UCharacterAbilitySystemComponent* AbilitySystemComponent;
 	UPROPERTY()
 	class UCharacterAttributeSetBase* AttributeSetBase;
+	UPROPERTY()
+	class URobotAttributeSetBase* RobotAttributeSetBase;
 
 	FGameplayTag DeadTag;
 	FDelegateHandle HealthChangedDelegateHandle;
@@ -43,6 +45,7 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual UCharacterAttributeSetBase* GatAttributeSetBase() const;
+	virtual URobotAttributeSetBase* GatRobotAttributeSetBase() const;
 
 	UFUNCTION(BlueprintCallable, Category = "PlayerState")
 	bool IsAlive() const;

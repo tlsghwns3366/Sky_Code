@@ -37,7 +37,7 @@ void UCharacterAttributeSetBase::OnRep_Sp(const FGameplayAttributeData& OldSp)
 }
 void UCharacterAttributeSetBase::OnRep_MaxSp(const FGameplayAttributeData& OldMaxSp)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSetBase, Sp, OldMaxSp);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UCharacterAttributeSetBase, MaxSp, OldMaxSp);
 }
 void UCharacterAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

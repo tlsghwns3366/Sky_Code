@@ -4,7 +4,7 @@
 #include "ProjectPlayerState.h"
 #include "Character/Abilities/CharacterAbilitySystemComponent.h"
 #include "Character/Abilities/Attributes/CharacterAttributeSetBase.h"
-
+#include "Character/Abilities/Attributes/RobotAttributeSetBase.h"
 
 AProjectPlayerState::AProjectPlayerState()
 {
@@ -13,6 +13,7 @@ AProjectPlayerState::AProjectPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	AttributeSetBase = CreateDefaultSubobject<UCharacterAttributeSetBase>(TEXT("AttributeSetbase"));
+	RobotAttributeSetBase = CreateDefaultSubobject<URobotAttributeSetBase>(TEXT("RobotAttributeSetBase"));
 
 	//기본적으로 매우 낮고 지연이 발생할 수 있기 때문에 설정
 	NetUpdateFrequency = 100.f;
@@ -28,6 +29,11 @@ UAbilitySystemComponent* AProjectPlayerState::GetAbilitySystemComponent() const
 UCharacterAttributeSetBase* AProjectPlayerState::GatAttributeSetBase() const
 {
 	return AttributeSetBase;
+}
+
+URobotAttributeSetBase* AProjectPlayerState::GatRobotAttributeSetBase() const
+{
+	return RobotAttributeSetBase;
 }
 
 bool AProjectPlayerState::IsAlive() const

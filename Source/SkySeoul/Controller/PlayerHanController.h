@@ -49,9 +49,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SelectNumberAction;
 
-	/** Tab Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* TabAction;
 
 protected:
 	virtual void BeginPlay() override;
@@ -70,12 +67,9 @@ protected:
 	void ControllerJump();
 	void ControllerStopJump();
 
-
-	void Select();
 	void Interaction();
 	void SelectNumber(const FInputActionValue& Value);
 	void LocationTrace();
-	void ChangeRobotNumber();
 
 	void DefaultInitialization();
 
