@@ -12,7 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCharacterDiedDelegate, ACharacterBa
 
 class UAbilitySetData;
 class AProjectPlayerState;
-
+class UStaticMeshComponent;
 UCLASS()
 class SKYSEOUL_API ACharacterBase : public ACharacter, public IAbilitySystemInterface
 {

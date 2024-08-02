@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+class UItemObject;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -25,10 +27,10 @@ protected:
 	int32 MaxInventorySize = 30;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TArray<class UItemObject*> ItemInventory;
+	TArray<UItemObject*> ItemInventory;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TArray<class UItemObject*> DefalutItemInventory;
+	TArray<UItemObject*> DefalutItemInventory;
 
 
 	UPROPERTY(BlueprintAssignable)
@@ -37,9 +39,15 @@ protected:
 public:	
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool AddItem(class UItemObject* Item);
+	virtual bool AddItem(UItemObject* Item);
 	UFUNCTION(BlueprintCallable)
-	virtual bool RemoveItem(class UItemObject* Item);
+	virtual bool RemoveItem(UItemObject* Item);
 
-		
+	UFUNCTION(BlueprintCallable)
+	UItemObject* FindItem(FGameplayTag Tag) const ;
+
+	UFUNCTION(BlueprintCallable)
+	void UseItem(UItemObject* Item);
+	int32 UseItem(UItemObject* Item, int32 Value);
+	void UseItem(FGameplayTag Tag);
 };

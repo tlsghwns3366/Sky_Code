@@ -11,6 +11,8 @@
 struct FSlateBrush;
 class UAbilitySetData;
 class UStaticMesh;
+class UCharacterGameplayAbility;
+class UInventoryComponent;
 /**
  * 
  */
@@ -54,6 +56,8 @@ public:
 	FGameplayTag ItemTag;
 
 	FString GetItemName() { return ItemName; };
+	FGameplayTag GetItemTag() { return ItemTag; };
+	int32 GetItemCount() { return ItemCount; };
 };
 
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
@@ -66,14 +70,20 @@ public:
 	UPROPERTY(Transient)
 	class UWorld* World;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	FItemInfoData ItemInfo;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	class UInventoryComponent* Inventory;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	UInventoryComponent* Inventory;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
 	UAbilitySetData* ItemAbilityData;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ability")
+	FGameplayTag UseAbilityTag;
 
 	UAbilitySetData* GetAbilityData();
+
+	void ItemUse();
+	void ItemUse(int32 Value);
+	bool UseItemCheck();
 };

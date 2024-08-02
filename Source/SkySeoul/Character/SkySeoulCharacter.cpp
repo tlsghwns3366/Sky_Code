@@ -21,6 +21,7 @@
 #include "Character/Abilities/Attributes/RobotAttributeSetBase.h"
 #include "Character/Abilities/AbilitySetData.h"
 #include "Character/ActorComponent/EquipmentComponent.h"
+#include "Character/Abilities/Attributes/CharacterAttributeSetBase.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -120,6 +121,9 @@ void ASkySeoulCharacter::ForwardTrace()
 	FVector End = Start + (Rot.Vector() * 1000.f);
 
 	FCollisionQueryParams TraceParams;
+	TArray<AActor*> IgnoreActor;
+	IgnoreActor.Add(this);
+	TraceParams.AddIgnoredActors(IgnoreActor);
 	bool Result = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel2, TraceParams);
 	//DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 2.0f);
 	if (Result)
@@ -288,43 +292,10 @@ void ASkySeoulCharacter::ChangeRobot(const int32 Value)
 		RobotArray[Value]->SetSelect(true);
 	OnRobotUpdated.Broadcast();
 }
-
-void ASkySeoulCharacter::SetAbilityData(UAbilitySetData* Data)
+void ASkySeoulCharacter::SelectNumberReset()
 {
-	RemoveAbility();
-	if (Data == nullptr)
-	{
-		AbilityActionData = nullptr;
-	}
-	else
-	{
-		AbilityActionData = Data;
-		AddAbility();
-	}
+	SelectNumber = 1;
 }
-
-void ASkySeoulCharacter::AddAbility()
-{
-	if (AbilityActionData == nullptr)
-		return;
-
-	FAbilitySetData_GrantedHandles& NewHandle  = AbilityHandles.AddDefaulted_GetRef();
-	AbilityActionData->GiveToAbilitySystem(AbilitySystemComponent, &NewHandle);
-}
-
-void ASkySeoulCharacter::RemoveAbility()
-{
-	for (auto It = AbilityHandles.CreateIterator(); It; It++)
-	{
-		FAbilitySetData_GrantedHandles& Entry = *It;
-		if (AbilitySystemComponent)
-		{
-			Entry.TakeFromAbilitySystem(AbilitySystemComponent);
-		}
-		It.RemoveCurrent();
-	}
-}
-
 void ASkySeoulCharacter::RequestSelectAction(const int32 Num)
 {
 	SelectNumber = Num;

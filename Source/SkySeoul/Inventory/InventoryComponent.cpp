@@ -31,18 +31,21 @@ bool UInventoryComponent::AddItem(UItemObject* Item)
 {
 	if (Item == nullptr)
 		return false;
-	for (UItemObject* InventoryItem : ItemInventory)
+	if (Item->ItemInfo.ItemCategory != EItemType::E_Item_Equip)
 	{
-		if (InventoryItem->ItemInfo.GetItemName() == Item->ItemInfo.GetItemName())
+		for (UItemObject* InventoryItem : ItemInventory)
 		{
-			InventoryItem->ItemInfo.ItemCount += Item->ItemInfo.ItemCount;
-			OnInventoryUpdated.Broadcast();
-			return true;
+			if (InventoryItem->ItemInfo.GetItemName() == Item->ItemInfo.GetItemName())
+			{
+				InventoryItem->ItemInfo.ItemCount += Item->ItemInfo.ItemCount;
+				OnInventoryUpdated.Broadcast();
+				return true;
+			}
 		}
 	}
 	Item->World = GetWorld();
 	Item->Inventory = this;
-	ItemInventory.Add(Item);
+	ItemInventory.AddUnique(Item);
 	OnInventoryUpdated.Broadcast();
 	return true;
 }
@@ -52,21 +55,52 @@ bool UInventoryComponent::RemoveItem(UItemObject* Item)
 	if (Item == nullptr)
 		return false;
 
-	for (UItemObject* InventoryItem : ItemInventory)
-	{
-		if (InventoryItem->ItemInfo.GetItemName() == Item->ItemInfo.GetItemName())
-		{
-			InventoryItem->ItemInfo.ItemCount -= Item->ItemInfo.ItemCount;
-			if (InventoryItem->ItemInfo.ItemCount <= 0)
-				break;
-			OnInventoryUpdated.Broadcast();
-			return true;
-		}
-	}
-
 	Item->World = nullptr;
 	Item->Inventory = nullptr;
 	ItemInventory.RemoveSingle(Item);
 	OnInventoryUpdated.Broadcast();
 	return true;
+}
+
+UItemObject* UInventoryComponent::FindItem(FGameplayTag Tag) const
+{
+	for (auto TargetItem : ItemInventory)
+	{
+		if (TargetItem->ItemInfo.ItemTag == Tag)
+			return TargetItem;
+	}
+
+	return nullptr;
+}
+
+void UInventoryComponent::UseItem(UItemObject* Item)
+{
+	Item->ItemUse();
+	if (Item->ItemInfo.GetItemCount() == 0)
+		RemoveItem(Item);
+	OnInventoryUpdated.Broadcast();
+}
+
+int32 UInventoryComponent::UseItem(UItemObject* Item, int32 Value)
+{
+	int32 Count = Item->ItemInfo.GetItemCount();
+	if (Count - Value >= 0)
+	{
+		Item->ItemUse(Value);
+		Count = Value;
+	}
+	else
+		Item->ItemUse(Count);
+
+	if (Item->ItemInfo.GetItemCount() == 0)
+		RemoveItem(Item);
+	OnInventoryUpdated.Broadcast();
+
+	return Count;
+}
+
+void UInventoryComponent::UseItem(FGameplayTag Tag)
+{
+	UItemObject* Item = FindItem(Tag);
+	UseItem(Item);
 }

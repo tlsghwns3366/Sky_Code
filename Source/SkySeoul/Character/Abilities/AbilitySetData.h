@@ -15,6 +15,7 @@ class UCharacterGameplayAbility;
 class UGameplayEffect;
 class UAttributeSet;
 class UCharacterAbilitySystemComponent;
+
 USTRUCT(BlueprintType)
 struct FAbilitySetData_GameplayAbility
 {
@@ -117,14 +118,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FGameplayTag GetAbilityEventTag(int32 Value);
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	TArray<FText> SelectText;
+	UFUNCTION(BlueprintCallable)
+	TArray<FText> SelectAbilityText();
 
 protected:
 
 	// Gameplay abilities to grant when this ability set is granted.
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities", meta = (TitleProperty = Ability))
-	TArray<FAbilitySetData_GameplayAbility> GrantedGameplayAbilities;
+	TArray<FAbilitySetData_GameplayAbility> DefaultGrantedGameplayAbilities;
+
+	// Gameplay abilities to grant when this ability set is granted.
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Abilities", meta = (TitleProperty = Ability))
+	TArray<FAbilitySetData_GameplayAbility> SelectGrantedGameplayAbilities;
 
 	// Gameplay effects to grant when this ability set is granted.
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay Effects", meta = (TitleProperty = GameplayEffect))

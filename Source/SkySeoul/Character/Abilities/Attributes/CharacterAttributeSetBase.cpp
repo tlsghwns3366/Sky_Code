@@ -4,7 +4,7 @@
 #include "Character/Abilities/Attributes/CharacterAttributeSetBase.h"
 #include "Net/UnrealNetwork.h"
 
-void UCharacterAttributeSetBase::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+void UCharacterAttributeSetBase::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
 {
 	Super::PreAttributeBaseChange(Attribute, NewValue);
 	if (Attribute == GetHealthAttribute())

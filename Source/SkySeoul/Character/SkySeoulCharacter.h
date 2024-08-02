@@ -11,6 +11,8 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UAbilitySetData;
+class UInventoryComponent;
+class UEquipmentComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRobotUpdated);
 
@@ -69,17 +71,12 @@ public:
 
 	FTimerHandle RobotLocationTimer;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Action")
-	UAbilitySetData* AbilityActionData;
-
-	TArray<FAbilitySetData_GrantedHandles> AbilityHandles;
-
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	class UInventoryComponent* InventoryComponent;
+	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
-	class UEquipmentComponent*	EquipComponent;
+	UEquipmentComponent*	EquipComponent;
 	
 protected:	
 	// To add mapping context
@@ -88,6 +85,9 @@ protected:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 public:
+	UInventoryComponent* GetInventoryComponent() {
+		return InventoryComponent;
+	};
 
 	virtual void PossessedBy(AController* NewController) override;
 
@@ -112,15 +112,7 @@ public:
 	void ChangeRobotRight();
 	void ChangeRobot(const int32 Value);
 
-	void SetAbilityData(UAbilitySetData* Data);
-
-	UFUNCTION(BlueprintCallable)
-	void AddAbility();
-
-	UFUNCTION(BlueprintCallable)
-	void RemoveAbility();
-
-
+	void SelectNumberReset();
 	void RequestSelectAction(const int32 Num);
 
 	/** Returns CameraBoom subobject **/

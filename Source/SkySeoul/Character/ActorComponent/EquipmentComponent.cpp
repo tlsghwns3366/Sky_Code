@@ -9,6 +9,7 @@
 #include "Character/SkySeoulCharacter.h"
 #include "Inventory/ItemObject.h"
 #include "Inventory/InventoryComponent.h"
+#include "Inventory/EquipmentObject.h"
 
 // Sets default values for this component's properties
 UEquipmentComponent::UEquipmentComponent()
@@ -38,6 +39,85 @@ void UEquipmentComponent::BeginPlay()
 			AttributeSetBase = PS->GatAttributeSetBase();
 		}
 	}
+	WeaponChangeUp();
+	QuickSlotInitialize();
+	OnSelectUpdated.Broadcast();
+}
+
+void UEquipmentComponent::SetSelectItem(UItemObject* Item)
+{
+	if (Item == SelectedItem)
+		return;
+	RemoveAbility(SelectedItem);
+	SelectedItem = Item;
+	AddAbilityData(Item);
+	if (Item == nullptr)
+		SelectedAbilityActionData = nullptr;
+	OwnerCharacter->SelectNumberReset();
+	SpawnItem();
+	OnSelectUpdated.Broadcast();
+}
+
+void UEquipmentComponent::SpawnItem()
+{
+	UEquipmentObject* EquipItem = Cast<UEquipmentObject>(SelectedItem);
+	if (EquipItem == nullptr)
+	{
+		if (EquipActor != nullptr)
+		{
+			EquipActor->Destroy();
+			EquipActor = nullptr;
+		}
+		return;
+	}
+	if (EquipActor != nullptr)
+	{
+		EquipActor->Destroy();
+		EquipActor = nullptr;
+	}
+	EquipActor = GetWorld()->SpawnActor(EquipItem->ActorToSpawn);
+	EquipActor->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, EquipItem->AttachSocket);
+}
+
+void UEquipmentComponent::QuickSlotInitialize()
+{
+	for (int32 index = 0; index < 6; index++)
+	{
+		QuickSlotItem.AddDefaulted_GetRef();
+	}
+}
+
+void UEquipmentComponent::SetQuickSlot(int32 Index, UItemObject* Object)
+{
+	RemoveQuickSlot(Object);
+
+	QuickSlotItem[Index] = Object;
+	OnEquipUpdated.Broadcast();
+}
+
+void UEquipmentComponent::RemoveQuickSlot(UItemObject* Object)
+{
+	if (QuickSlotItem.Contains(Object))
+	{
+		QuickSlotItem[QuickSlotItem.Find(Object)] = nullptr;
+	}
+	OnEquipUpdated.Broadcast();
+}
+
+void UEquipmentComponent::UseSelectedItem()
+{
+	if (SelectedItem == nullptr)
+		return;
+	if (SelectedItem->ItemInfo.ItemCategory != EItemType::E_Item_Consumable)
+		return;
+	if (!SelectedItem->UseItemCheck())
+		return;
+	CharacterInvnetoryComponent->UseItem(SelectedItem);
+	if (SelectedItem->ItemInfo.GetItemCount() <= 0)
+	{
+		RemoveQuickSlot(SelectedItem);
+	}
+	OnEquipUpdated.Broadcast();
 }
 
 UItemObject* UEquipmentComponent::FindEquipItemObject(FGameplayTag Tag)
@@ -47,8 +127,16 @@ UItemObject* UEquipmentComponent::FindEquipItemObject(FGameplayTag Tag)
 
 void UEquipmentComponent::OnEquip(FGameplayTag Tag, UItemObject* Object)
 {
+	if (Object->ItemInfo.ItemCategory != EItemType::E_Item_Equip)
+		return;
+
+	if (WeaponMap.Contains(Tag))
+		UnEquip(Tag);
+
 	CharacterInvnetoryComponent->RemoveItem(Object);
-	WeaponMap.Add(Tag, Object);
+	WeaponMap.Add(Tag, Object); 
+	WeaponChangeUp();
+
 	OnEquipUpdated.Broadcast();
 }
 
@@ -56,95 +144,112 @@ void UEquipmentComponent::UnEquip(FGameplayTag Tag)
 {
 	if(WeaponMap.Contains(Tag))
 		CharacterInvnetoryComponent->AddItem(WeaponMap[Tag]);
-
 	WeaponMap.Remove(Tag);
+	WeaponChangeUp();
+
 	OnEquipUpdated.Broadcast();
 }
 
 void UEquipmentComponent::WeaponChangeUp()
 {
+	if (WeaponMap.IsEmpty())
+	{
+		SetSelectItem(nullptr);
+		return;
+	}
+	if (SelectedItem == nullptr)
+	{
+		SetSelectItem(WeaponMap.begin().Value());
+		return;
+	}
+
 	auto Inter = WeaponMap.begin();
 	while (Inter != WeaponMap.end())
 	{
-		if (Inter.Key() == SelectedTag)
+		if (Inter.Key() == SelectedItem->ItemInfo.GetItemTag())
 		{
 			++Inter;
 			if (Inter == WeaponMap.end())
 			{
-				SelectedWeapon = WeaponMap.begin().Value();
-				SelectedTag = WeaponMap.begin().Key();
+				SetSelectItem(WeaponMap.begin().Value());
+				OnWeaponUp.Broadcast();
+				return;
 			}
 			else
 			{
-				SelectedWeapon = Inter.Value();
-				SelectedTag = Inter.Key();
+				SetSelectItem(Inter.Value());
+				OnWeaponUp.Broadcast();
+				return;
 			}
 			break;
 		}
 		++Inter;
 	}
-	SetAbilityData(SelectedWeapon->GetAbilityData());
+	SetSelectItem(WeaponMap.begin().Value());
 }
 
 void UEquipmentComponent::WeaponChangeDown()
 {
+	if (WeaponMap.IsEmpty())
+	{
+		SetSelectItem(nullptr);
+		return;
+	}
+	if (SelectedItem == nullptr)
+	{
+		SetSelectItem(WeaponMap.begin().Value());
+		return;
+	}
+
 	auto Inter = WeaponMap.begin();
 	auto BackInter = WeaponMap.begin();
 	while (Inter != WeaponMap.end())
 	{
 		++Inter;
-		if (Inter.Key() == SelectedTag)
+		if (Inter.Key() == SelectedItem->ItemInfo.GetItemTag())
 		{
-			SelectedWeapon = BackInter.Value();
-			SelectedTag = BackInter.Key();
-			SetAbilityData(SelectedWeapon->GetAbilityData());
-			return;
+			break;
 		}
 		if (Inter == WeaponMap.end())
 			break;
 		++BackInter;
 	}
-	SelectedWeapon = BackInter.Value();
-	SelectedTag = BackInter.Key();
-	SetAbilityData(SelectedWeapon->GetAbilityData());
+	OnWeaponDown.Broadcast();
+	SetSelectItem(BackInter.Value());
 }
 
-UAbilitySetData* UEquipmentComponent::GetWeaponAbilityData()
+UAbilitySetData* UEquipmentComponent::GetSelectedAbilityData()
 {
-	return EquipAbilityActionData;
+	return SelectedAbilityActionData;
 }
 
-void UEquipmentComponent::SetAbilityData(UAbilitySetData* Data)
+void UEquipmentComponent::AddAbilityData(UItemObject* Item)
 {
-	RemoveAbility();
-	if (Data == nullptr)
-	{
-		EquipAbilityActionData = nullptr;
-	}
-	else
-	{
-		EquipAbilityActionData = Data;
-		AddAbility();
-	}
-}
-
-void UEquipmentComponent::AddAbility()
-{
-	if (EquipAbilityActionData == nullptr)
+	if (Item == nullptr)
+		return;
+	if (Item->GetAbilityData() == nullptr)
 		return;
 
-	FAbilitySetData_GrantedHandles& NewHandle = AbilityHandles.AddDefaulted_GetRef();
-	EquipAbilityActionData->GiveToAbilitySystem(AbilitySystemComponent, &NewHandle);
+	SelectedAbilityActionData = Item->GetAbilityData();
+	FItemAbilityData& NewHandle = AbilityHandles.AddDefaulted_GetRef();
+	NewHandle.Item = Item;
+	SelectedAbilityActionData->GiveToAbilitySystem(AbilitySystemComponent, &NewHandle.GrantedHandles);
 }
 
-void UEquipmentComponent::RemoveAbility()
+void UEquipmentComponent::RemoveAbility(UItemObject* Item)
 {
+	if (Item == nullptr)
+		return;
+
 	for (auto It = AbilityHandles.CreateIterator(); It; It++)
 	{
-		FAbilitySetData_GrantedHandles& Entry = *It;
-		if (AbilitySystemComponent)
+		FItemAbilityData& Entry = *It;
+		if (Entry.Item == Item)
 		{
-			Entry.TakeFromAbilitySystem(AbilitySystemComponent);
+			if (AbilitySystemComponent)
+			{
+				Entry.GrantedHandles.TakeFromAbilitySystem(AbilitySystemComponent);
+			}
 		}
 		It.RemoveCurrent();
 	}

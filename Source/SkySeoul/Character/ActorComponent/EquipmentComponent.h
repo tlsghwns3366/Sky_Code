@@ -9,10 +9,25 @@
 #include "EquipmentComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEquipUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSelectUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponUp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponDown);
+
 
 class UItemObject;
 class ASkySeoulCharacter;
 class UInventoryComponent;
+class AEquipmentItemActor;
+
+USTRUCT(BlueprintType)
+struct FItemAbilityData
+{
+	GENERATED_BODY()
+public:
+
+	UItemObject* Item;
+	FAbilitySetData_GrantedHandles GrantedHandles;
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class SKYSEOUL_API UEquipmentComponent : public UActorComponent
@@ -26,39 +41,72 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
 	TMap<FGameplayTag, UItemObject*> WeaponMap;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Action")
-	UAbilitySetData* EquipAbilityActionData;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	UItemObject* SelectedWeapon;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	FGameplayTag SelectedTag;
+	TArray<UItemObject*> QuickSlotItem;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	UInventoryComponent* CharacterInvnetoryComponent;
-
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEquipUpdated OnEquipUpdated;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnSelectUpdated OnSelectUpdated;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponUp OnWeaponUp;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponDown OnWeaponDown;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	TObjectPtr<class UCharacterAbilitySystemComponent> AbilitySystemComponent;
 	TWeakObjectPtr<class UCharacterAttributeSetBase> AttributeSetBase;
+	TArray<FItemAbilityData> AbilityHandles;
 
-	TArray<FAbilitySetData_GrantedHandles> AbilityHandles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability|Action")
+	UAbilitySetData* SelectedAbilityActionData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	UItemObject* SelectedItem;
+
 
 	UPROPERTY(EditDefaultsOnly)
 	ASkySeoulCharacter* OwnerCharacter;
 
+	UPROPERTY(EditDefaultsOnly)
+	AActor* EquipActor;
 
-	void SetAbilityData(UAbilitySetData* Data);
-	void AddAbility();
-	void RemoveAbility();
+	void AddAbilityData(UItemObject* Item);
+	void RemoveAbility(UItemObject* Item);
 
 public:
+
+	AActor* GetEquipActor() { return EquipActor; };
+
+	void SpawnItem();
+
+	void QuickSlotInitialize();
+
+	UFUNCTION(BlueprintCallable)
+	void SetSelectItem(UItemObject* Item);
+
+	UFUNCTION(BlueprintCallable)
+	UItemObject* GetSelectedItem() const { return SelectedItem; } ;
+
+
+	UFUNCTION(BlueprintCallable)
+	void SetQuickSlot(int32 Index, UItemObject* Object);
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveQuickSlot(UItemObject* Object);
+
+	UFUNCTION(BlueprintCallable)
+	void UseSelectedItem();
 
 	UFUNCTION(BlueprintCallable)
 	UItemObject* FindEquipItemObject(FGameplayTag Tag);
@@ -75,8 +123,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void WeaponChangeDown();
 
-
 	UFUNCTION(BlueprintCallable)
-	UAbilitySetData* GetWeaponAbilityData();
+	UAbilitySetData* GetSelectedAbilityData();
 
 };

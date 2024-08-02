@@ -68,9 +68,29 @@ void UAbilitySetData::GiveToAbilitySystem(UCharacterAbilitySystemComponent* Char
 	//		return;
 
 	// Grant the gameplay abilities.
-	for (int32 AbilityIndex = 0; AbilityIndex < GrantedGameplayAbilities.Num(); ++AbilityIndex)
+	for (int32 AbilityIndex = 0; AbilityIndex < DefaultGrantedGameplayAbilities.Num(); ++AbilityIndex)
 	{
-		const FAbilitySetData_GameplayAbility& AbilityToGrant = GrantedGameplayAbilities[AbilityIndex];
+		const FAbilitySetData_GameplayAbility& AbilityToGrant = DefaultGrantedGameplayAbilities[AbilityIndex];
+
+		if (!IsValid(AbilityToGrant.Ability))
+			continue;
+
+		UCharacterGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<UCharacterGameplayAbility>();
+
+		FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityToGrant.AbilityLevel);
+		AbilitySpec.SourceObject = SourceObject;
+		AbilitySpec.DynamicAbilityTags.AddTag(AbilityToGrant.InputTag);
+
+		const FGameplayAbilitySpecHandle AbilitySpecHandle = CharacterASC->GiveAbility(AbilitySpec);
+		if (OutGrantedHandles)
+		{
+			OutGrantedHandles->AddAbilitySpecHandle(AbilitySpecHandle);
+		}
+	}
+
+	for (int32 AbilityIndex = 0; AbilityIndex < SelectGrantedGameplayAbilities.Num(); ++AbilityIndex)
+	{
+		const FAbilitySetData_GameplayAbility& AbilityToGrant = SelectGrantedGameplayAbilities[AbilityIndex];
 
 		if (!IsValid(AbilityToGrant.Ability))
 			continue;
@@ -124,12 +144,22 @@ void UAbilitySetData::GiveToAbilitySystem(UCharacterAbilitySystemComponent* Char
 
 int32 UAbilitySetData::GetAbilityCount()
 {
-	return GrantedGameplayAbilities.Num();
+	return SelectGrantedGameplayAbilities.Num();
 }
 
 FGameplayTag UAbilitySetData::GetAbilityEventTag(int32 Value)
 {
 	if (Value >= GetAbilityCount())
 		return FGameplayTag::EmptyTag;
-	return GrantedGameplayAbilities[Value].EventTag;
+	return SelectGrantedGameplayAbilities[Value].EventTag;
+}
+
+TArray<FText> UAbilitySetData::SelectAbilityText()
+{
+	TArray<FText> SelectAbility;
+	for (int32 AbilityIndex = 0; AbilityIndex < SelectGrantedGameplayAbilities.Num(); ++AbilityIndex)
+	{
+		SelectAbility.Add(FText::FromName(SelectGrantedGameplayAbilities[AbilityIndex].AbilityName));
+	}
+	return SelectAbility;
 }
